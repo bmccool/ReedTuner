@@ -18,9 +18,9 @@ class SpectrumAnalyzer:
     FORMAT = pyaudio.paFloat32
     CHANNELS = 1
     RATE = 16000
-    CHUNK = 512
+    CHUNK = 1024
     START = 0
-    N = 512
+    N = 1024
 
     wave_x = 0
     wave_y = 0
@@ -36,6 +36,7 @@ class SpectrumAnalyzer:
             input = True,
             output = False,
             frames_per_buffer = self.CHUNK)
+        #self.f = open("audiodata", "w")
         # Main loop
         self.loop()
 
@@ -43,10 +44,13 @@ class SpectrumAnalyzer:
         try:
             while True :
                 self.data = self.audioinput()
+                #self.f.write(self.data)
                 self.fft()
+                self.max_freq()
                 self.graphplot()
 
         except KeyboardInterrupt:
+            #self.f.close()
             self.pa.close()
 
         print("End...")
@@ -59,9 +63,15 @@ class SpectrumAnalyzer:
     def fft(self):
         self.wave_x = range(self.START, self.START + self.N)
         self.wave_y = self.data[self.START:self.START + self.N]
-        self.spec_x = np.fft.fftfreq(self.N, d = 1.0 / self.RATE)  
+        self.spec_x = np.fft.fftfreq(self.N, d = 1 / self.RATE)  
         y = np.fft.fft(self.data[self.START:self.START + self.N])    
         self.spec_y = [np.sqrt(c.real ** 2 + c.imag ** 2) for c in y]
+        
+    def max_freq(self):
+        amplitude = max(self.spec_y)
+        frequency = self.spec_y.index(amplitude)
+        frequency = frequency * 16
+        print("Freq: {}, Freq/16: {}".format(frequency, frequency / 16))
 
     def graphplot(self):
         plt.clf()
@@ -74,6 +84,7 @@ class SpectrumAnalyzer:
         #Spectrum
         plt.subplot(312)
         plt.plot(self.spec_x, self.spec_y, marker= 'o', linestyle='-')
+        #plt.axis([0, self.RATE / 2, 0, 50])
         plt.axis([0, self.RATE / 2, 0, 50])
         plt.xlabel("frequency [Hz]")
         plt.ylabel("amplitude spectrum")
